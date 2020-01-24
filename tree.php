@@ -1,113 +1,158 @@
 <?php
 
+
+class WPQuestions_Walker extends Walker_Category {
+   function start_el( &$output, $category, $depth = 0, $args = array(), $id = 0 ) {
+
+      $cat_name = apply_filters( 'list_cats', esc_attr( $category->name ), $category );
+
+		if ( '' === $cat_name )
+			return;
+		
+
+      
+      if (!empty($args['show_count'])) {
+			$cat_name .= '&nbsp(' . number_format_i18n( $category->count ) . ')';
+      }
+      
+      // query srting for admin link
+      // post
+      if ($args['post_type'] == 'post') { 
+         $link_admin = '<a class="term_admin_link" href="?cat=' . $category->term_id . '">' . $cat_name . '</a>';
+      }
+      // product
+      if ($args['post_type'] == 'product') {
+         $link_admin = '<a class="term_admin_link" href="?post_type=product&product_cat=' . $category->slug . '">' . $cat_name . '</a>';
+      } 
+
+      
+
+      if (!empty($args['term_front_link_text'])) {
+			$link_front = '<a class="term_front_link" href="' . get_term_link($category) . '" target="_blank">' . $args['term_front_link_text'] . '</a>';
+		}  
+
+
+      $output     .= "\t<li";
+      $css_classes = array(
+         'cat-item',
+         'cat-item-' . $category->term_id,
+      );
+
+      if ( !empty( $args['current_category'] ) ) {
+         // 'current_category' can be an array, so we use `get_terms()`.
+         $_current_terms = get_terms(
+            array(
+               'taxonomy'   => $category->taxonomy,
+               'include'    => $args['current_category'],
+               'hide_empty' => false,
+            )
+         );
+
+         foreach ( $_current_terms as $_current_term ) {
+
+            if ( $category->term_id == $_current_term->term_id ) {
+               $css_classes[] = 'current-cat';
+               $link          = str_replace( '<a', '<a aria-current="page"', $link );
+            } elseif ( $category->term_id == $_current_term->parent ) {
+               $css_classes[] = 'current-cat-parent';
+            }
+            while ( $_current_term->parent ) {
+               if ( $category->term_id == $_current_term->parent ) {
+                  $css_classes[] = 'current-cat-ancestor';
+                  if($args['unfold'] == 'current') {
+                     $opened = ' opened';
+                  }
+                  
+                  break;
+               }
+               $_current_term = get_term( $_current_term->parent, $category->taxonomy );
+            }
+         }
+      }
+
+
+      $css_classes = implode( ' ', apply_filters( 'category_css_class', $css_classes, $category, $depth, $args ) );
+      $css_classes = $css_classes ? ' class="' . esc_attr( $css_classes ) . '"' : '';
+
+      $output .= $css_classes;
+      $output .= ">\n";
+
+
+      // open sub icon
+      if($args['unfold'] == 'all') {
+         $opened = ' opened';
+      }
+      $term_children = get_term_children( $category->term_id, $category->taxonomy );
+      if (count($term_children) > 0) {
+         $output .= "<span class='sub_toggler" . $opened . "'>" . $args['unfold_icon'] . "</span>";
+      }
+
+      // folder icon
+      if (!empty($args['folder_icon'])) {
+         $output .= $args['folder_icon'];
+      }
+      
+      
+      $output .= "$link_admin";
+      $output .= "$link_front\n";
+
+	}
+
+	public function end_el( &$output, $page, $depth = 0, $args = array() ) {
+		if ( 'list' != $args['style'] ) {
+			return;
+		}
+
+		$output .= "</li>\n";
+	}
+
+}
+
 // get current url
 global $wp;
-$current_url = add_query_arg( $wp->query_string, '', home_url( $wp->request ) ); // with args
-$url = strtok($current_url, '?'); // without args
 
-// plugin settings
-$settings = array(
-   'aew_taxonomy_name' => 'category',
-   'aew_taxonomy_unfold' => 'current',
-   'aew_taxonomy_icon' => 'dashicons dashicons-arrow-right',
-   'aew_taxonomy_show_count' => 1,
-   'aew_taxonomy_hide_empty' => 0,
-);
+$post_type = $wp->query_vars['post_type'];
+if ($post_type == 'post') {
+   $taxonomy = 'category';
+}
+if ($post_type == 'product') {
+   $taxonomy = 'product_cat';
+   // var_dump(get_query_var('product_cat'));
+}
+
 
 // query args
 $args = array(
-   'taxonomy' => $settings['aew_taxonomy_name'],
-   // 'orderby' => $settings['aew_taxonomy_order_by'],
-   // 'order' => $settings['aew_taxonomy_order'],
+   'taxonomy' => $taxonomy,
+   'post_type' => $post_type,
+   'unfold' => 'current', // current | all,
+   'unfold_icon' => '<span class="ai_unfold_icon"></span>',
+   'term_front_link_text' => '<span class="dashicons dashicons-external"></span>',
+   'folder_icon' => '<span class="dashicons dashicons-category"></span>',
    'title_li' => '',
    'echo' => false,
-   'hide_empty'  => $settings['aew_taxonomy_hide_empty'],
-   // 'show_option_none' => $settings['aew_taxonomy_fallback_message'],
-   'show_count' => $settings['aew_taxonomy_show_count'],
-   // 'exclude' => $settings['aew_taxonomy_exclude'],
+   'hide_empty'  => 0,
+   'current_category' => '',
+   // 'all_posts' => 'Всі записи';
+   'show_count' => 1,
+   // 'exclude' => '',
+   // 'show_option_none' => '',
+   // 'orderby' => '',
+   // 'order' => '',
+   
+   'walker' => new WPQuestions_Walker,
+
 );
 
+
 $html = wp_list_categories( $args );
-
-// move count inside link
-$html = preg_replace('/<\/a> \(([0-9]+)\)/', '&nbsp;(\\1)</a>', $html);
-
-// UNKNOWN CODE 
-// $html = str_replace('</a> (', '</a> <span>(', $html);
-// $html = str_replace(')', ')</span>', $html);
-
-if ($html) {
-
-   // DOM object to manipulate results of wp_list_categories()
-   $DOM = new DOMDocument();
-   $DOM->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
-
-
-   // change all terms link to wp-admin and add link to term archive
-   $lis = $DOM->getElementsByTagName('li');
-   foreach($lis as $li) {
-      $a = $li->getElementsByTagName('a');
-      $a->item(0)->setAttribute('target','_blank');
-      $term_text = $a->item(0)->nodeValue; // get old link text
-      $a->item(0)->nodeValue = ''; // and clear old link text
-      $a->item(0)->setAttribute('class','term_front_link');
-      $external_icon = $DOM->createDocumentFragment();
-      $external_icon->appendXML('<span class="dashicons dashicons-external"></span>');
-      $a->item(0)->appendChild($external_icon);
-      $a_front = $DOM->createDocumentFragment();
-      $cat_front_slug = basename($a->item(0)->getAttribute('href'));
-      $term = get_term_by('slug', $cat_front_slug, $settings['aew_taxonomy_name']);
-      $a_front->appendXML('<a href="?cat=' . $term->term_id . '" class="term_admin_link">' . $term_text . '</a>');
-      $li->insertBefore( $a_front, $a->item(0)); // insert new link
-      
-   }
-
-   // All posts top item
-   if (!isset($_GET['category_name']) && !isset($_GET['cat'])) {
-      $all_posts_class = ' class="current-cat"';
-   } else {
-      $all_posts_class = '';
-   }
-   $all_cats = $DOM->createDocumentFragment();
-   $all_cats->appendXML('<li' . $all_posts_class . '><a href="' . $url . '">Всі записи</a></li>');
-   $firstChild = $DOM->firstChild;
-   $DOM->insertBefore($all_cats, $firstChild);
-
-   // uls
-   $uls = $DOM->getElementsByTagName('ul');
-   foreach($uls as $ul) {
-      $parent = $ul->parentNode;
-      $firstChild = $parent->firstChild;
-      $parent_li_classes = $parent->getAttribute('class');	
-      $toggleSpan = $DOM->createDocumentFragment();
-      if ($settings['aew_taxonomy_unfold'] == 'all'  || (strpos($parent_li_classes, 'current-cat-ancestor') && $settings['aew_taxonomy_unfold'] == 'current')) {
-         $toggleSpan->appendXML('<span class="sub_toggler opened"><span class="ai_unfold_icon"></span></span>');
-      } else {
-         $toggleSpan->appendXML('<span class="sub_toggler"><span class="ai_unfold_icon"></span></span>');
-      }
-      $parent->insertBefore($toggleSpan, $firstChild);
-   }
-
-   // save DOM
-   $html=$DOM->saveHTML();
-
-}
 
 ?>
 
 <div id="ai_ct_folder_panel">
-
-   <div class="ai_ct_folder_panel_wrap<?php echo ' aew_unfold_' . $settings['aew_taxonomy_unfold']; ?>">
-
+   <div class="ai_ct_folder_panel_wrap">
       <?php echo '<ul class="aew_navigation_tree aew_navigation_wrapper">' . $html . '</ul>'; ?>
-
-      <?php 
-
-      
-      ?>
-
    </div>
-
 </div>
 
 
@@ -136,10 +181,11 @@ if ($html) {
       left: 160px;
       bottom: 0;
       width: 280px;
-      padding: 55px 25px 40px 20px;
+      padding: 55px 25px 10px 20px;
       z-index: 2;
       overflow: auto;
       box-sizing: border-box;
+      margin-bottom: 35px;
    }
 
 
@@ -154,27 +200,65 @@ if ($html) {
    .aew_navigation_tree ul.sub-menu {
       display: none;
    }
-   .aew_unfold_all .aew_navigation_tree ul.children,
-   .aew_unfold_all .aew_navigation_tree ul.sub-menu {
+
+   .aew_navigation_tree .sub_toggler.opened ~ ul.children,
+   .aew_navigation_tree .sub_toggler.opened ~ ul.sub-menu {
       display: block;
    }
-   .aew_unfold_current .aew_navigation_tree .sub_toggler.opened ~ ul.children,
-   .aew_unfold_current .aew_navigation_tree .sub_toggler.opened ~ ul.sub-menu {
-      display: block;
+
+   .ai_ct_folder_panel_wrap ul {
+      margin-top: 0.45em;
+      padding-left: 1.4em;
    }
 
    .aew_navigation_tree li  {
       list-style-type: none;
       position: relative;
+      margin-bottom: 0.5em;
+      line-height: 1.2em;
    }
 
+
+   .aew_navigation_tree li a {
+      text-decoration: none;
+      color: #444;
+      vertical-align: middle;
+   }
+   .aew_navigation_tree li a.term_admin_link {
+      margin-left: 0.2em;
+   }
+   .aew_navigation_tree li a.term_front_link {
+      opacity: 0;
+      transition: opacity 200ms;
+      position: absolute;
+   }
+   .aew_navigation_tree li a.term_admin_link:hover ~ a.term_front_link {
+      opacity: 1;
+   }
+   .aew_navigation_tree li a.term_front_link:hover {
+      opacity: 1;
+   }
+   .aew_navigation_tree li a:focus {
+      box-shadow: none;
+   }
+   .aew_navigation_tree li.current-cat > a.term_admin_link {
+      text-decoration: underline;
+   }
+   .aew_navigation_tree li .dashicons {
+      font-size: 1.5em;
+   }
+   
+
+
+
    .aew_navigation_tree .sub_toggler {
-      display: block;
+      display: inline-block;
       cursor: pointer;
       transition: all 300ms;
       position: absolute;
       width: 1.5em;
       height: 1.5em;
+      left: -1.5em;
    }
    .aew_navigation_tree .sub_toggler .ai_unfold_icon {
       display: block;
@@ -208,47 +292,6 @@ if ($html) {
       display: none;
    }
 
-   .aew_navigation_tree li a.term_admin_link {
-      margin-left: 1.3em;
-      text-decoration: none;
-      color: #444;
-      position: relative;
-      padding-left: 1.6em;
-   }
-   .aew_navigation_tree li a.term_front_link {
-      text-decoration: none;
-      color: #444;
-      opacity: 0;
-      transition: opacity 200ms;
-      position: absolute;
-   }
-   .aew_navigation_tree li a.term_admin_link:hover ~ a.term_front_link {
-      opacity: 1;
-   }
-   .aew_navigation_tree li a.term_front_link:hover {
-      opacity: 1;
-   }
-   .aew_navigation_tree li a:focus {
-      box-shadow: none;
-   }
-   .aew_navigation_tree li a.term_admin_link:before {
-      content: '';
-      position: absolute;
-      width: 1.5em;
-      height: 1.5em;
-      display: inline-block;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'%3E%3Cpath fill='%23444' d='M10 5L8 3H3c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1V6c0-.55-.45-1-1-1h-5z'/%3E%3C/svg%3E ");
-      background-size: contain;
 
-      left: 0;
-   }
-   .aew_navigation_tree li ul {
-      margin-top: 0.45em;
-      margin-left: 0.45em;
-      padding-left: 0.5em;
-   }
 
-   .aew_navigation_tree li.current-cat > a.term_admin_link {
-      text-decoration: underline;
-   }
 </style>
