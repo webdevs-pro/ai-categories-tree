@@ -1,20 +1,24 @@
 <?php
 
 
-class WPQuestions_Walker extends Walker_Category {
+class AI_Taxonomy_Tree_Walker extends Walker_Category {
    function start_el( &$output, $category, $depth = 0, $args = array(), $id = 0 ) {
 
+      // apply filters to term name
       $cat_name = apply_filters( 'list_cats', esc_attr( $category->name ), $category );
 
+
+      // exit if term name empty
 		if ( '' === $cat_name )
 			return;
 		
 
-      
+      // posts count
       if (!empty($args['show_count'])) {
 			$cat_name .= '&nbsp(' . number_format_i18n( $category->count ) . ')';
       }
       
+
       // query srting for admin link
       // post
       if ($args['post_type'] == 'post') { 
@@ -140,7 +144,7 @@ $args = array(
    // 'orderby' => '',
    // 'order' => '',
    
-   'walker' => new WPQuestions_Walker,
+   'walker' => new AI_Taxonomy_Tree_Walker,
 
 );
 
@@ -149,16 +153,17 @@ $html = wp_list_categories( $args );
 
 ?>
 
-<div id="ai_ct_folder_panel">
-   <div class="ai_ct_folder_panel_wrap">
-      <?php echo '<ul class="aew_navigation_tree aew_navigation_wrapper">' . $html . '</ul>'; ?>
+<div id="ai_taxonomy_tree_panel" class="stuffbox">
+   <div class="ai_taxonomy_tree_header">Header</div>
+   <div class="ai_taxonomy_tree_content">
+      <ul class="ai_taxonomy_tree"><?php echo $html; ?></ul>
    </div>
 </div>
 
 
 <script>
    jQuery(document).ready(function($) {
-      var toggler = $('.aew_navigation_tree li .sub_toggler');
+      var toggler = $('.ai_taxonomy_tree li .sub_toggler');
       $(toggler).on('click', function(e){
          var $this = $(this);
          if ($this.hasClass('opened')) {
@@ -167,51 +172,72 @@ $html = wp_list_categories( $args );
          $this.parent().find('ul').first().slideToggle(200);
          $this.toggleClass('opened');
       });
+
+
+      
    });
 </script>
 
 
 <style>
    body.wp-admin #wpcontent {
-      padding-left: 278px;
+      padding-left: 300px;
    }
-   .ai_ct_folder_panel_wrap {
+   #ai_taxonomy_tree_panel {
       position: fixed;
-      top: 32px;
-      left: 160px;
+      top: 42px;
+      left: 170px;
       bottom: 0;
       width: 280px;
-      padding: 55px 25px 10px 20px;
       z-index: 2;
       overflow: auto;
       box-sizing: border-box;
-      margin-bottom: 35px;
+      margin-bottom: 37px;
+   }
+   .ai_taxonomy_tree_header {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 40px;
+      left: 0;
+      padding: 10px;
+   }
+   .ai_taxonomy_tree_content {
+      position: absolute;
+      top: 40px;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      padding: 0 25px 10px 8px;      
+
    }
 
 
 
 
-   .aew_navigation_tree,
-   .aew_navigation_tree ul.menu {
-      margin: 0;
-   }
-
-   .aew_navigation_tree ul.children,
-   .aew_navigation_tree ul.sub-menu {
-      display: none;
-   }
-
-   .aew_navigation_tree .sub_toggler.opened ~ ul.children,
-   .aew_navigation_tree .sub_toggler.opened ~ ul.sub-menu {
-      display: block;
-   }
-
-   .ai_ct_folder_panel_wrap ul {
-      margin-top: 0.45em;
+   .ai_taxonomy_tree {
       padding-left: 1.4em;
    }
 
-   .aew_navigation_tree li  {
+   .ai_taxonomy_tree ul {
+      border-left: 1px dotted #ccc;
+      margin-top: 0.45em;
+      margin-left: 0.7em;
+      padding-left: 0.85em;
+   }
+
+   .ai_taxonomy_tree ul.children,
+   .ai_taxonomy_tree ul.sub-menu {
+      display: none;
+   }
+
+   .ai_taxonomy_tree .sub_toggler.opened ~ ul.children,
+   .ai_taxonomy_tree .sub_toggler.opened ~ ul.sub-menu {
+      display: block;
+   }
+
+   .ai_taxonomy_tree li  {
       list-style-type: none;
       position: relative;
       margin-bottom: 0.5em;
@@ -219,39 +245,39 @@ $html = wp_list_categories( $args );
    }
 
 
-   .aew_navigation_tree li a {
+   .ai_taxonomy_tree li a {
       text-decoration: none;
       color: #444;
       vertical-align: middle;
    }
-   .aew_navigation_tree li a.term_admin_link {
+   .ai_taxonomy_tree li a.term_admin_link {
       margin-left: 0.2em;
    }
-   .aew_navigation_tree li a.term_front_link {
+   .ai_taxonomy_tree li a.term_front_link {
       opacity: 0;
       transition: opacity 200ms;
       position: absolute;
    }
-   .aew_navigation_tree li a.term_admin_link:hover ~ a.term_front_link {
+   .ai_taxonomy_tree li a.term_admin_link:hover ~ a.term_front_link {
       opacity: 1;
    }
-   .aew_navigation_tree li a.term_front_link:hover {
+   .ai_taxonomy_tree li a.term_front_link:hover {
       opacity: 1;
    }
-   .aew_navigation_tree li a:focus {
+   .ai_taxonomy_tree li a:focus {
       box-shadow: none;
    }
-   .aew_navigation_tree li.current-cat > a.term_admin_link {
+   .ai_taxonomy_tree li.current-cat > a.term_admin_link {
       text-decoration: underline;
    }
-   .aew_navigation_tree li .dashicons {
+   .ai_taxonomy_tree li .dashicons {
       font-size: 1.5em;
    }
    
 
 
 
-   .aew_navigation_tree .sub_toggler {
+   .ai_taxonomy_tree .sub_toggler {
       display: inline-block;
       cursor: pointer;
       transition: all 300ms;
@@ -259,8 +285,9 @@ $html = wp_list_categories( $args );
       width: 1.5em;
       height: 1.5em;
       left: -1.5em;
+      background-color: #fff;
    }
-   .aew_navigation_tree .sub_toggler .ai_unfold_icon {
+   .ai_taxonomy_tree .sub_toggler .ai_unfold_icon {
       display: block;
       position: absolute;
       top: 50%;
@@ -270,7 +297,7 @@ $html = wp_list_categories( $args );
       height: 9px;
       border: 1px solid #000;
    }
-   .aew_navigation_tree .sub_toggler .ai_unfold_icon:before {
+   .ai_taxonomy_tree .sub_toggler .ai_unfold_icon:before {
       content: '';
       position: absolute;
       height: 1px;
@@ -279,7 +306,7 @@ $html = wp_list_categories( $args );
       top: 4px;
       left: 2px;
    }
-   .aew_navigation_tree .sub_toggler .ai_unfold_icon:after {
+   .ai_taxonomy_tree .sub_toggler .ai_unfold_icon:after {
       content: '';
       position: absolute;
       height: 5px;
@@ -288,7 +315,7 @@ $html = wp_list_categories( $args );
       top: 2px;
       left: 4px; 
    }
-   .aew_navigation_tree .sub_toggler.opened .ai_unfold_icon:after {
+   .ai_taxonomy_tree .sub_toggler.opened .ai_unfold_icon:after {
       display: none;
    }
 

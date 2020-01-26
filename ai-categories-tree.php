@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/webdevs-pro/ai-categories-tree
  * Description: Taxonomy tree for admin posts list
  * Author: Alex Ischenko
- * Version: 1.0
+ * Version: 1.0.1
  * Text Domain: ai-categories-tree
  */
 
