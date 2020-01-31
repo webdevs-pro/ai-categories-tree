@@ -153,7 +153,7 @@ $html = wp_list_categories( $args );
 
 ?>
 
-<div id="ai_taxonomy_tree_panel" class="stuffbox">
+<div id="ai_taxonomy_tree_panel">
    <div class="ai_taxonomy_tree_header">Header</div>
    <div class="ai_taxonomy_tree_content">
       <ul class="ai_taxonomy_tree"><?php echo $html; ?></ul>
@@ -285,7 +285,7 @@ $html = wp_list_categories( $args );
       width: 1.5em;
       height: 1.5em;
       left: -1.5em;
-      background-color: #fff;
+      /* background-color: #fff; */
    }
    .ai_taxonomy_tree .sub_toggler .ai_unfold_icon {
       display: block;
