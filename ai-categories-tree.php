@@ -1,10 +1,10 @@
 <?php
 /**
- * Plugin Name: AI Categories Tree
+ * Plugin Name: AI Admin Categories Tree
  * Plugin URI: https://github.com/webdevs-pro/ai-categories-tree
  * Description: Taxonomy tree for admin posts list
  * Author: Alex Ischenko
- * Version: 1.0.2
+ * Version: 1.0.3
  * Text Domain: ai-categories-tree
  */
 

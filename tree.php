@@ -1,7 +1,7 @@
 <?php
 
 
-class AI_Taxonomy_Tree_Walker extends Walker_Category {
+class AI_Admin_Taxonomy_Tree_Walker extends Walker_Category {
    function start_el( &$output, $category, $depth = 0, $args = array(), $id = 0 ) {
 
       // apply filters to term name
@@ -144,7 +144,7 @@ $args = array(
    // 'orderby' => '',
    // 'order' => '',
    
-   'walker' => new AI_Taxonomy_Tree_Walker,
+   'walker' => new AI_Admin_Taxonomy_Tree_Walker,
 
 );
 
